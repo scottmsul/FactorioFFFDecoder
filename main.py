@@ -6,7 +6,7 @@ import string
 from PIL import Image, ImageFont, ImageDraw
 root_dir = os.path.realpath(os.path.join(__file__, '..'))
 
-IMAGE_NUM = 2
+IMAGE_NUM = 5
 
 # constants
 PIXELS_PER_BLOCK = 4
@@ -124,8 +124,7 @@ print(f'final guess: {curr_guesses[0]}')
 
 with Image.open(IMAGE_FILENAME).convert('RGBA') as image:
     d = ImageDraw.Draw(image)
-    #d.text((X_LEFT_OFFSET, Y_TOP_OFFSET), font=FONT, text=curr_guesses[0][0], anchor='ls')
-    d.text((X_LEFT_OFFSET, Y_TOP_OFFSET), font=FONT, text='Volcanos', anchor='ls')
+    d.text((X_LEFT_OFFSET, Y_TOP_OFFSET), font=FONT, text=curr_guesses[0][0], anchor='ls')
     image.save(os.path.join('images', 'results', f'result{IMAGE_NUM}.png'))
 
 # I tried a previous approach that was letter-based rather than block-based but the results weren't as good

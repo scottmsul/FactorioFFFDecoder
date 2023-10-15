@@ -4,12 +4,13 @@ import os
 import pandas as pd
 import pprint
 import string
+from english_words import get_english_words_set
 from PIL import Image, ImageFont, ImageDraw
 root_dir = os.path.realpath(os.path.join(__file__, '..'))
 
-IMAGE_NUM = 2
+IMAGE_NUM = 5
 
-RETAINED_GUESSES = 100
+RETAINED_GUESSES = 10
 
 # constants
 PIXELS_PER_BLOCK = 4
@@ -29,10 +30,10 @@ HEIGHT_BLOCKS = 5
 Y_ORIG_TOP_OFFSET = 15
 
 # from looking at the picture real close
-X_ORIG_LEFT_OFFSET = -1
+X_ORIG_LEFT_OFFSET = 0
 
-X_LEFT_OFFSET = None
-Y_TOP_OFFSET = None
+X_LEFT_OFFSET = 0
+Y_TOP_OFFSET = 15
 
 # make generic later
 IMAGE_FILENAME = os.path.join(root_dir, 'images', 'secrets', f'secret{IMAGE_NUM}.png')
@@ -86,66 +87,31 @@ def block_err(block_num, text):
     block_array = convert_to_block_array(img)
     return np.square(challenge_block[:,:block_num]-block_array[:,:block_num]).sum()
 
-# block num is how many blocks to the right we are
-def get_block_charset(block_num, prev_text):
-    # include prev_text w/ curr block as a base case
-    prev_err = block_err(block_num, prev_text)
-    curr_guesses = set([(prev_text, prev_err)])
+words = get_english_words_set(['web2'], lower=True)
+words = [w.title() for w in words]
+num_words = len(words)
+best_err = 1e99
+best_word = None
+results = []
+for i, word in enumerate(words):
+    if i%1000==0:
+        print(f'word {i}/{num_words}')
+    err = get_error(word)
+    results.append((word, err))
 
-    # if the next block already has data we return early
-    if block_has_data(block_num+1, prev_text):
-        return curr_guesses
+results = sorted(results, key=lambda item: item[1])
+results = results[:1000]
+df = pd.DataFrame(results, columns=['word', 'error'])
 
-    next_allowed_chars = string.ascii_uppercase if prev_text=='' else string.ascii_lowercase
-    for c in next_allowed_chars:
-        curr_text = prev_text + c
-        # if next block has no data then new chars could potentially affect current block, so recursively add more chars
-        if not block_has_data(block_num+1, curr_text):
-            recursive_guesses = get_block_charset(block_num, curr_text)
-            curr_guesses.update(recursive_guesses)
-        else:
-            curr_err = block_err(block_num, curr_text)
-            # only add new guess if it changes the error
-            if prev_err != curr_err:
-                curr_guesses.add( (curr_text, curr_err) )
-    return curr_guesses
+print(f'best word: {best_word}')
+print(f'best err: {best_err}')
 
-num_horiz_blocks = challenge_width // PIXELS_PER_BLOCK
-
-additional_x_offset = np
-all_guesses = []
-for additional_x_offset in [0]:
-    for additional_y_offset in [0]:
-        X_LEFT_OFFSET = X_ORIG_LEFT_OFFSET + additional_x_offset
-        Y_TOP_OFFSET = Y_ORIG_TOP_OFFSET + additional_y_offset
-        print(f'testing x_offset={X_LEFT_OFFSET}, y_offset={Y_TOP_OFFSET}')
-
-        curr_guesses = set([('', 1e99)])
-        for block in range(num_horiz_blocks-1):
-            next_guesses = set([])
-            for curr_text, curr_err in curr_guesses:
-                next_guesses.update(get_block_charset(block, curr_text))
-            next_guesses = sorted(list(next_guesses), key=lambda item:item[1])
-            # keep best N guesses. Making this bigger can search more possibilities but takes longer.
-            curr_guesses = set(next_guesses[:RETAINED_GUESSES])
-            print(f'best guesses for block {block}')
-            pprint.pprint(next_guesses[:10])
-        curr_guesses_with_offset = [(text, err, X_LEFT_OFFSET, Y_TOP_OFFSET) for text, err in list(curr_guesses)]
-        all_guesses.extend(curr_guesses_with_offset)
-
-
-# incorporate last block into final error
-all_guesses = [(g, block_err(num_horiz_blocks, g), x, y) for (g,_,x,y) in all_guesses]
-all_guesses = sorted(all_guesses, key=lambda item:item[1])
-print(f'final guess: {all_guesses[0]}')
-
-all_guesses_df = pd.DataFrame(all_guesses, columns=['guess', 'score', 'x_offset', 'y_offset'])
-all_guesses_df.to_csv(os.path.join('guesses', f'guesses{IMAGE_NUM}.csv'))
-
-with Image.open(IMAGE_FILENAME).convert('RGBA') as image:
-    d = ImageDraw.Draw(image)
-    d.text((X_LEFT_OFFSET, Y_TOP_OFFSET), font=FONT, text=all_guesses[0][0], anchor='ls')
-    image.save(os.path.join('images', 'results', f'result{IMAGE_NUM}.png'))
+df.to_csv(os.path.join('guesses', f'guesses{IMAGE_NUM}_words.csv'))
+#
+# with Image.open(IMAGE_FILENAME).convert('RGBA') as image:
+#     d = ImageDraw.Draw(image)
+#     d.text((X_LEFT_OFFSET, Y_TOP_OFFSET), font=FONT, text=all_guesses[0][0], anchor='ls')
+#     image.save(os.path.join('images', 'results', f'result{IMAGE_NUM}.png'))
 
 # I tried a previous approach that was letter-based rather than block-based but the results weren't as good
 # prev_best_err = 1e99

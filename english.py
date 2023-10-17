@@ -32,7 +32,7 @@ Y_ORIG_TOP_OFFSET = 15
 # from looking at the picture real close
 X_ORIG_LEFT_OFFSET = 0
 
-X_LEFT_OFFSET = 0
+X_LEFT_OFFSET = -1
 Y_TOP_OFFSET = 15
 
 # make generic later

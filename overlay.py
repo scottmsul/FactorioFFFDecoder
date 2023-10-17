@@ -4,11 +4,11 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 
 IMAGE_NUM = 5
-TEXT = 'Caelestis'
+TEXT = 'Earthland'
 
 IMAGE_FILENAME = os.path.join('images', 'secrets', f'secret{IMAGE_NUM}.png')
 FONT = ImageFont.truetype("fonts/TitilliumWeb-Regular.ttf", 14)
-X_LEFT_OFFSET = -1
+X_LEFT_OFFSET = 0
 Y_TOP_OFFSET = 15
 
 with Image.open(IMAGE_FILENAME).convert('RGBA') as image:

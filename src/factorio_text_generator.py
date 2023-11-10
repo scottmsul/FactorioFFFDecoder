@@ -62,6 +62,13 @@ def get_image(x_offset=0, y_offset=11, width=60, height=16, text='', use_cache=T
     img = raw_img.crop((0, 0, width, height))
     return img
 
+def check_if_cached(text):
+    '''
+    Checks whether a given text is already cached
+    '''
+    filepath = get_filepath(text)
+    return os.path.exists(filepath)
+
 def clear_image_from_cache(text):
     '''
     Deletes a given text from the cache if it exists

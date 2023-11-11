@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import os
 import subprocess
 import wand.image
 from PIL import Image
@@ -14,16 +15,24 @@ def downscaled_data(image, new_size, downscale_mode='PILLOW'):
     return downscale_method(image, new_size)
 
 def downscaled_data_magick_windows(image, new_size):
-    image.save('downscale_start_tmp.png')
-    subprocess.run(['magick', 'downscale_start_tmp.png', '-scale', '25%', 'downscale_end_tmp.png'])
-    image2 = Image.open('downscale_end_tmp.png').convert('RGB')
+    save_dir = os.path.join('images', 'tmp')
+    os.makedirs(save_dir, exist_ok=True)
+    start_filepath = os.path.join(save_dir, 'downscale_start_tmp.png')
+    end_filepath = os.path.join(save_dir, 'downscale_end_tmp.png')
+    image.save(start_filepath)
+    subprocess.run(['magick', start_filepath, '-scale', '25%', end_filepath])
+    image2 = Image.open(end_filepath).convert('RGB')
     image_data = np.asarray(image2).astype(float)[:,:,:3]
     return image_data
 
 def downscaled_data_magick_linux(image, new_size):
-    image.save('downscale_start_tmp.png')
-    subprocess.run(['convert', '-scale', '25%', 'downscale_start_tmp.png', 'downscale_end_tmp.png'])
-    image2 = Image.open('downscale_end_tmp.png').convert('RGB')
+    save_dir = os.path.join('images', 'tmp')
+    os.makedirs(save_dir, exist_ok=True)
+    start_filepath = os.path.join(save_dir, 'downscale_start_tmp.png')
+    end_filepath = os.path.join(save_dir, 'downscale_end_tmp.png')
+    image.save(start_filepath)
+    subprocess.run(['convert', '-scale', '25%', start_filepath, end_filepath])
+    image2 = Image.open(end_filepath).convert('RGB')
     image_data = np.asarray(image2).astype(float)[:,:,:3]
     return image_data
 

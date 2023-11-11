@@ -1,13 +1,9 @@
 import numpy as np
 from PIL import Image
-import cv2
 import hashlib
 import os
-import subprocess
-import wand.image
 
 PIXELS_PER_BLOCK = 4
-RESAMPLING_METHOD = Image.Resampling.BOX
 FACTORIO_BACKGROUND_COLOR = (36, 35, 36)
 TEXT_BOX_2_Y_OFFSET = 11 # number of pixels from top of text_box_2 that bottom of matches text line bottom
 
@@ -61,79 +57,6 @@ def crop_width(image):
         max_x = image.width
     cropped_image = image.crop((min_x, 0, max_x+1, image.height))
     return cropped_image
-
-def downscaled_data(image, new_size):
-    image.save('downscale_start_tmp.png')
-    subprocess.run(['magick', 'downscale_start_tmp.png', '-scale', '25%', 'downscale_end_tmp.png'])
-    #subprocess.run(['convert', '-scale', '25%', 'downscale_start_tmp.png', 'downscale_end_tmp.png'])
-    image2 = Image.open('downscale_end_tmp.png').convert('RGB')
-    image_data = np.asarray(image2).astype(float)[:,:,:3]
-    return image_data
-
-#def downscaled_data(image, new_size):
-#    img = wand.image.Image.from_array(np.asarray(image))
-#    img.resize(width=new_size[0], height=new_size[1], filter='box')
-#    data = np.array(img)
-#    return data
-
-#def downscaled_data(image, new_size):
-#    downscaled = image.resize(new_size, resample=RESAMPLING_METHOD)
-#    data = np.asarray(downscaled).astype(float)[:,:,:3]
-#    return data
-
-#def downscaled_data(image, new_size):
-#    image = image.convert('RGB')
-#    data = np.asarray(image)[:,:,::-1].copy()
-#    #data = cv2.resize(data, (new_size[0], new_size[1]), interpolation=cv2.INTER_LINEAR)
-#    data = cv2.resize(data, (new_size[0], new_size[1]), interpolation=cv2.INTER_AREA)
-#    #data = cv2.resize(data, (new_size[0], new_size[1]), interpolation=cv2.INTER_NEAREST)
-#    data = data.astype(float)
-#    return data
-
-# def downscaled_data(image):
-#     new_width = image.width // PIXELS_PER_BLOCK + int(image.width%PIXELS_PER_BLOCK>0)
-#     new_height = image.height // PIXELS_PER_BLOCK + int(image.height%PIXELS_PER_BLOCK>0)
-#     # repeating should always make width/height divisible by new_width/new_height and correctly weigh pixels on boundaries
-#     image_data = np.asarray(image).astype(float)[:,:,:3]
-#     image_data = image_data.repeat(new_height, axis=0).repeat(new_width, axis=1)
-#     result = np.zeros((new_height, new_width, 3))
-#     y_spacing = image_data.shape[0] // new_height
-#     x_spacing = image_data.shape[1] // new_width
-#     for y in range(new_height):
-#         for x in range(new_width):
-#             # WOAH! rounding down instead of rounding nearest gives ZERO error!!!
-#             #avg = np.round(image_data[old_y_start:old_y_end, old_x_start:old_x_end, :].mean(axis=(0,1)))
-#             avg = image_data[y_spacing*y:y_spacing*(y+1), x_spacing*x:x_spacing*(x+1), :].mean(axis=(0,1)).astype(int)
-#             result[y,x,:] = avg
-#     return result
-
-# def downscaled_data(image):
-#     new_width = image.width // PIXELS_PER_BLOCK + int(image.width%PIXELS_PER_BLOCK>0)
-#     new_height = image.height // PIXELS_PER_BLOCK + int(image.height%PIXELS_PER_BLOCK>0)
-#     # repeating should always make width/height divisible by new_width/new_height and correctly weigh pixels on boundaries
-#     image_data = np.asarray(image).astype(float)[:,:,:3]
-#     sum_result = np.zeros((new_height, new_width, 3))
-#     count_result = np.zeros((new_height, new_width, 3))
-#     for y in range(image.height):
-#         for x in range(image.width):
-#             result_y = int((new_height / image.height ) * y)
-#             result_x = int((new_width / image.width ) * x)
-#             sum_result[result_y, result_x] += image_data[y,x,:]
-#             count_result[result_y, result_x,:] += 1
-#     avg_result = (sum_result / count_result).astype(int)
-#     return avg_result
-
-# def downscaled_data(image):
-#     # repeating should always make width/height divisible by four and correctly weigh pixels on boundaries
-#     image_data = np.asarray(image).astype(float)[:,:,:3]
-#
-#     for y in range(new_height):
-#         for x in range(new_width):
-#             # WOAH! rounding down instead of rounding nearest gives ZERO error!!!
-#             #avg = np.round(image_data[old_y_start:old_y_end, old_x_start:old_x_end, :].mean(axis=(0,1)))
-#             avg = image_data[y_spacing*y:y_spacing*(y+1), x_spacing*x:x_spacing*(x+1), :].mean(axis=(0,1)).astype(int)
-#             result[y,x,:] = avg
-#     return result
 
 def adjust_borders(image, top, right, bottom, left, color=FACTORIO_BACKGROUND_COLOR):
     # imagine the bottom-left of the image at the origin of a cartesian coordinate system

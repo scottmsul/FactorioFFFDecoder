@@ -2,9 +2,11 @@ import numpy as np
 from PIL import Image
 import hashlib
 import os
+import subprocess
 
 PIXELS_PER_BLOCK = 4
-FACTORIO_BACKGROUND_COLOR = (36, 35, 36)
+#FACTORIO_BACKGROUND_COLOR = (36, 35, 36)
+FACTORIO_BACKGROUND_COLOR = (40, 39, 40)
 TEXT_BOX_2_Y_OFFSET = 11 # number of pixels from top of text_box_2 that bottom of matches text line bottom
 
 cache_dir = os.path.join('images', 'cache')

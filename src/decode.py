@@ -42,57 +42,93 @@ import string
 from PIL import Image, ImageFont, ImageDraw
 root_dir = os.path.realpath(os.path.join(__file__, '..', '..'))
 
-from factorio_text_generator import get_image, display_message, start_countdown
+#from factorio_text_generator import get_image, display_message, start_countdown
+from factorio_save_text_generator import get_image, display_message, start_countdown
 from downscale import downscaled_data
 from util import add_margin, PIXELS_PER_BLOCK, FACTORIO_BACKGROUND_COLOR
+#from util import get_image
 
 #Factorio is more accurate but slower
-#METHOD = 'Factorio'
-METHOD = 'Pillow'
+#METHOD = 'Pillow'
+METHOD = 'Factorio'
 
 if METHOD == 'Factorio':
     start_countdown()
+    display_message('start')
 
-IMAGE_NUM = 1
-RETAINED_GUESSES = 10
+IMAGE_NUM = 6
+RETAINED_GUESSES = 1
 
 # used to set the downscaling algorithm, see downscale.py for a full list of options
-DOWNSCALE_MODE = 'magick_windows'
+#DOWNSCALE_MODE = 'wand'
+#DOWNSCALE_MODE = 'magick_linux'
+DOWNSCALE_MODE = 'custom'
+#DOWNSCALE_MODE = 'pillow'
 
 # used to prune when an error seems too high, this can be set to 1e99 to get the best group regardless of error
-#MAX_ERROR = 5000
-MAX_ERROR = 1e99
+#MAX_ERROR = 12000
+MAX_ERROR = 100
+
+known = 'not-this-time-SANDIEGO'
 
 # used to control character sequence search space
 def get_next_allowed_chars(text):
-    next_allowed_chars = string.ascii_uppercase if text == '' else string.ascii_lowercase
+    if len(text) < len(known):
+        next_allowed_chars = known[len(text)]
+        return next_allowed_chars
+    #elif len(text) < len(known)+1:
+    #    return string.ascii_uppercase
+    #else:
+    #    return ''
+    #elif len(text) == len(known):
+    #    return string.ascii_uppercase
+    #else:
+    #    return ''
+
+    #next_allowed_chars = string.ascii_letters + string.digits + string.punctuation
+    # check m,r,n
+    #next_allowed_chars = 'n' if text=='' else 'no' if text=='n' else string.ascii_lowercase + '-'
+    #next_allowed_chars = '[' if text == '' else string.ascii_letters if text=='[' else string.ascii_lowercase
+    #next_allowed_chars = (string.ascii_letters + string.digits + string.punctuation) if text == '' else string.ascii_lowercase
+    #next_allowed_chars = string.ascii_uppercase if text == '' else string.ascii_lowercase
+    next_allowed_chars = string.ascii_uppercase
+    #next_allowed_chars = string.ascii_lowercase + '-' + string.digits
 
     # ignore letters that would enter fourth block if secret is only three blocks tall
-    global HEIGHT_BLOCKS
-    if HEIGHT_BLOCKS==3:
-        next_allowed_chars = next_allowed_chars.replace('g', '').replace('j', '').replace('p', '').replace('q', '').replace('y', '')
+    #global HEIGHT_BLOCKS
+    #if HEIGHT_BLOCKS==3:
+    next_allowed_chars = next_allowed_chars.replace('g', '').replace('j', '').replace('p', '').replace('q', '').replace('y', '')
 
     return next_allowed_chars
 
 # used to control how many blocks to check before halting, eg this lets us just check the first letter, or None to check all letters
-#NUM_BLOCKS = 1
+#NUM_BLOCKS = 40
 NUM_BLOCKS = None
 
 # secrets 1, 2, 3, 4 all prefer (-1, 11)
-X_LEFT_OFFSETS = [-1]
-Y_TOP_OFFSETS = [11]
+#X_LEFT_OFFSETS = [-1]
+#Y_TOP_OFFSETS = [11]
+#X_MARGINS = [0]
+#Y_MARGINS = [0]
+#HEIGHT_DELTAS = [0]
+#WIDTH_DELTAS = [0]
+
+#X_LEFT_OFFSETS = [-2, -1, 0, 1, 2]
+#Y_TOP_OFFSETS = [15, 16]
+X_LEFT_OFFSETS = [2]
+Y_TOP_OFFSETS = [16]
 X_MARGINS = [0]
 Y_MARGINS = [0]
 HEIGHT_DELTAS = [0]
 WIDTH_DELTAS = [0]
 
 # my typical search space when I'm not sure
-# X_LEFT_OFFSETS = [-2, -1, 0, 1, 2]
-# Y_TOP_OFFSETS = [10, 11, 12, 13]
-# X_MARGINS = [0]
-# WIDTH_DELTAS = [-2, -1, 0, 1]
-# Y_MARGINS = [0]
-# HEIGHT_DELTAS = [-2, -1, 0, 1]
+#X_LEFT_OFFSETS = [-4, -3, -2, -1, 0]
+#Y_TOP_OFFSETS = [11, 12]
+#X_MARGINS = [0]
+#WIDTH_DELTAS = [-2, -1, 0, 1]
+#Y_MARGINS = [0]
+#HEIGHT_DELTAS = [-2, -1, 0, 1]
 
 #### ONLY CHANGE STUFF ABOVE THIS LINE UNLESS YOU KNOW WHAT YOU'RE DOING ####
 
@@ -105,7 +141,7 @@ Y_MARGIN = None
 WIDTH_DELTA = None
 HEIGHT_DELTA = None
 
-FONT = ImageFont.truetype("fonts/TitilliumTTF/TitilliumWeb-Regular.ttf", 14)
+FONT = ImageFont.truetype("fonts/TitilliumTTF/TitilliumWeb-Regular.ttf", 17)
 
 IMAGE_FILENAME = os.path.join(root_dir, 'images', 'secrets', f'secret{IMAGE_NUM}.png')
 challenge_image = Image.open(IMAGE_FILENAME).convert('RGB')
@@ -163,16 +199,19 @@ def get_error(guess):
 
 # block num is how many blocks to the right we are
 def get_block_charset(curr_num_blocks, curr_text, prev_img_downscaled_data=None):
+    #print(curr_text)
     curr_img = generate_image_from_text(challenge_image.width+PIXELS_PER_BLOCK, curr_text)
     curr_img_downscaled_data = downscaled_data(curr_img, downscaled_size, DOWNSCALE_MODE)
 
     # if adding the new letter doesn't change the block data, don't include in the charset
+
     if (prev_img_downscaled_data is not None):
         diff = np.square(prev_img_downscaled_data[:,:curr_num_blocks+1,:]-curr_img_downscaled_data[:,:curr_num_blocks+1,:]).sum()
         if diff==0:
             return set()
 
     curr_err = np.square(curr_img_downscaled_data[:,:curr_num_blocks+1,:]-challenge_data[:,BLOCK:BLOCK+curr_num_blocks+1,:]).sum()
+    curr_diff = curr_img_downscaled_data[:,:curr_num_blocks+1,:]-challenge_data[:,BLOCK:BLOCK+curr_num_blocks+1,:]
     curr_guesses = set([(curr_text, curr_err)])
 
     next_allowed_chars = get_next_allowed_chars(curr_text)
@@ -215,13 +254,15 @@ def run_trial(block, x_left_offset, y_top_offset, x_margin, y_margin, x_trim, y_
             next_guesses.update(curr_next_guesses)
         next_guesses = sorted(list(next_guesses), key=lambda item:item[1])
         print(f'guesses for blocks {block}-{curr_num_blocks}')
-        pprint.pprint(next_guesses[:10])
+        pprint.pprint(next_guesses[:100])
         if next_guesses[0][1] > MAX_ERROR:
             print('error too high')
             return []
         # keep best N guesses. Making this bigger can search more possibilities but takes longer.
-        curr_guesses = set([g for g in next_guesses[:RETAINED_GUESSES] if g[1] <= MAX_ERROR])
-    return next_guesses[:RETAINED_GUESSES]
+        # curr_guesses = set([g for g in next_guesses[:RETAINED_GUESSES] if g[1] <= MAX_ERROR])
+        curr_guesses = set([g for g in next_guesses if g[1] <= MAX_ERROR])
+    return next_guesses
+    #return next_guesses[:RETAINED_GUESSES]
 
 def run_trials():
     all_guesses = []
@@ -249,7 +290,7 @@ if METHOD=='Factorio':
         all_guesses_df = pd.DataFrame(all_guesses, columns=['guess', 'score', 'block', 'left_offset', 'top_offset', 'x_margin', 'y_margin', 'x_trim', 'y_trim'])
         all_guesses_df.to_csv(os.path.join('results', f'guesses{IMAGE_NUM}.csv'))
     except:
-        display_message('Error!')
+        #display_message('Error')
         raise
 else:
     all_guesses = run_trials()
@@ -258,4 +299,4 @@ else:
 
 
 if METHOD=='Factorio':
-    display_message('Done!')
+    display_message('Done')

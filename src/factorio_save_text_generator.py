@@ -1,3 +1,7 @@
+'''
+Generates text to crack FFF 388
+Requires graphics zoom to 125% and brightness at 15
+'''
 import argparse
 import hashlib
 import numpy as np
@@ -9,12 +13,17 @@ from argparse import RawTextHelpFormatter
 from PIL import Image, ImageDraw, ImageFont
 from util import add_margin, FACTORIO_BACKGROUND_COLOR
 
-TEXT_BOX_1_COORDS = (480, 165)
-TEXT_BOX_2_COORDS = (480, 200)
-TEXT_BOX_2_REGION = (237, 197, 60, 16)
-TEXT_BOX_2_Y_OFFSET = 11 # number of pixels from top of text_box_2 that bottom of matches text line bottom
+TEXT_BOX_1_COORDS = (550, 125)
+TEXT_BOX_2_COORDS = (550, 160)
+DELETE_SAVE_COORDS = (1750, 83)
+#CONFIRM_DELETE_COORDS = (1091, 480)
+CONFIRM_DELETE_COORDS = (1150, 480) # the box moves as the text gets longer...
+SAVE_TEXT_BOX_COORDS = (372, 81)
+SAVE_BUTTON_COORDS = (961, 479)
+TEXT_BOX_2_REGION = (160, 149, 360, 20)
+TEXT_BOX_2_Y_OFFSET = 15 # number of pixels from top of text_box_2 that bottom of matches text line bottom
 
-cache_dir = os.path.join('images', 'cache')
+cache_dir = os.path.join('images', 'save_cache')
 
 def start_countdown():
     '''
@@ -100,16 +109,40 @@ def display_message(text):
     Useful for both get_raw_image and displaying custom messages, such as when a script is finished or errors out.
     '''
     pyautogui.moveTo(*TEXT_BOX_2_COORDS)
-    pyautogui.click(button='right')
-    pydirectinput.keyDown('ctrl')
-    pydirectinput.press('a')
-    pydirectinput.keyUp('ctrl')
-    pydirectinput.press('backspace')
-    pyautogui.write(text)
-    pydirectinput.press('enter')
-    pyautogui.moveTo(*TEXT_BOX_1_COORDS)
+    time.sleep(0.1)
     pyautogui.click()
-    # if it screenshots too fast, sometimes leaves orange background
+    time.sleep(0.1)
+    pyautogui.moveTo(*DELETE_SAVE_COORDS)
+    time.sleep(0.1)
+    pyautogui.click()
+    time.sleep(0.1)
+    pyautogui.moveTo(*CONFIRM_DELETE_COORDS)
+    time.sleep(0.1)
+    pyautogui.click()
+    time.sleep(0.1)
+    pyautogui.moveTo(*SAVE_TEXT_BOX_COORDS)
+    time.sleep(0.1)
+    pyautogui.click()
+    time.sleep(0.1)
+    pydirectinput.keyDown('ctrl')
+    time.sleep(0.1)
+    pydirectinput.press('a')
+    time.sleep(0.1)
+    pydirectinput.keyUp('ctrl')
+    time.sleep(0.1)
+    pydirectinput.press('backspace')
+    time.sleep(0.1)
+    pyautogui.write(text)
+    time.sleep(0.1)
+    pydirectinput.press('enter')
+    time.sleep(0.5)
+    pyautogui.moveTo(*SAVE_BUTTON_COORDS)
+    time.sleep(0.1)
+    pyautogui.click()
+    time.sleep(0.1)
+    pyautogui.moveTo(*TEXT_BOX_1_COORDS)
+    time.sleep(0.1)
+    pyautogui.click()
     time.sleep(0.1)
 
 ### helper function for testing, used to make sure offsets and width/height match equivalent pillow functions ###
@@ -147,8 +180,12 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(prog='Factorio Text Generator', description=HELP_DESCRIPTION, formatter_class=RawTextHelpFormatter)
     parser.add_argument('-t', '--text', help='text to screenshot', required=True)
     args = parser.parse_args()
+
     start_countdown()
 
     text = args.text
-    image = get_raw_image(text, use_cache=False)
+    image = get_raw_image(text, True)
     image.show()
+
+    #text = '[E'
+    #print(check_if_cached(text))
